@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # Open WebUI service
+  open-webui:
+    build:
+      context: ./open-webui
+      dockerfile: Dockerfile
+      args:
+        - USE_CUDA=false
+        - USE_OLLAMA=false
+        - USE_SLIM=false
+        - USE_PERMISSION_HARDENING=false
+        # - USE_EMBEDDING_MODEL=text-embedding-3-small
+        - BUILD_HASH=${BUILD_HASH:-prod-build}
+    image: open-webui:${WEBUI_DOCKER_TAG:-latest}
+    container_name: open-webui
+    restart: unless-stopped
+    # ports:
+    #  - "${OPEN_WEBUI_PORT:-3000}:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      # OpenAI API Configuration
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # Ollama Configuration (optional - only if using local Ollama)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+
+      # Security
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+
+      # CORS Configuration
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:-*}
+      - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-*}
+
+      # Privacy Settings
+      - SCARF_NO_ANALYTICS=true
+      - DO_NOT_TRACK=true
+      - ANONYMIZED_TELEMETRY=false
+
+      # Application Configuration
+      - ENV=prod
+      - PORT=8080
+      - WEBUI_AUTH=${WEBUI_AUTH:-true}
+      - DATA_DIR=/app/backend/data
+
+      # Optional: Custom branding
+      - WEBUI_NAME=${WEBUI_NAME:-Open WebUI}
+
+      # Optional: Database Configuration (using SQLite by default)
+      # - DATABASE_URL=postgresql://user:password@postgres:5432/openwebui
+
+    networks:
+      - open-webui-network
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      test: ["CMD", "curl", "--silent", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Ollama service for running LLMs locally
+  # Uncomment this section if you want to use Ollama instead of OpenAI
+  # ollama:
+  #   image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}
+  #   container_name: ollama
+  #   restart: unless-stopped
+  #   pull_policy: always
+  #   tty: true
+  #   volumes:
+  #     - ollama:/root/.ollama
+  #   environment:
+  #     - OLLAMA_ORIGINS=*
+  #   ports:
+  #     - "11434:11434"
+  #   networks:
+  #     - open-webui-network
+  #   # Uncomment if you have GPU support (NVIDIA)
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: all
+  #   #           capabilities: [gpu]
+
+  # Optional: PostgreSQL Database (uncomment if you want to use PostgreSQL instead of SQLite)
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: open-webui-postgres
+  #   restart: unless-stopped
+  #   volumes:
+  #     - postgres:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=${POSTGRES_DB:-openwebui}
+  #     - POSTGRES_USER=${POSTGRES_USER:-openwebui}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #   networks:
+  #     - open-webui-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openwebui}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Optional: Redis for caching and sessions (uncomment if needed for scaling)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: open-webui-redis
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis:/data
+  #   networks:
+  #     - open-webui-network
+  #   command: redis-server --appendonly yes
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+networks:
+  open-webui-network:
+    driver: bridge
+
+volumes:
+  open-webui:
+    driver: local
+  # ollama:
+  #   driver: local
+  # postgres:
+  #   driver: local
+  # redis:
+  #   driver: local
