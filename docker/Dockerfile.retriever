@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN pip install --no-cache-dir fastapi uvicorn[standard] qdrant-client openai python-dotenv
+
+COPY backend/services /app/backend/services
+
+CMD ["uvicorn", "services.retrieval_api:app", "--host", "0.0.0.0", "--port", "8080", "--app-dir", "backend"]
