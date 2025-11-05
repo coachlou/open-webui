@@ -21,6 +21,6 @@ services:
       AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-}
       AZURE_OPENAI_EMBEDDING_DEPLOYMENT: ${AZURE_OPENAI_EMBEDDING_DEPLOYMENT:-}
       AUTH_BEARER_TOKEN: ${AUTH_BEARER_TOKEN:-}
-    ports:
-      - "${RETRIEVER_PORT:-8080}:8080"
+    expose:
+      - "8080"
     restart: unless-stopped
