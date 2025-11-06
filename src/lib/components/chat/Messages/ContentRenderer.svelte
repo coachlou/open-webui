@@ -15,7 +15,6 @@
 	} from '$lib/stores';
 	import FloatingButtons from '../ContentRenderer/FloatingButtons.svelte';
 	import { createMessagesList } from '$lib/utils';
-	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 	export let id;
 	export let content;
@@ -43,66 +42,6 @@
 
 	let contentContainerElement;
 	let floatingButtonsElement;
-
-	const buildSourceInfos = (sourcesList = []) => {
-		const entries = [];
-
-		sourcesList.forEach((source) => {
-			source?.document?.forEach((document, index) => {
-				if (model?.info?.meta?.capabilities?.citations === false) {
-					entries.push({
-						title: 'N/A',
-						href: null,
-						page: undefined,
-						fileId: null
-					});
-					return;
-				}
-
-				const metadata = source?.metadata?.[index] ?? {};
-				const title =
-					metadata?.title ??
-					metadata?.name ??
-					metadata?.source ??
-					source?.source?.title ??
-					source?.source?.name ??
-					'N/A';
-
-				const page =
-					typeof metadata?.page === 'number' && !Number.isNaN(metadata.page)
-						? metadata.page
-						: undefined;
-
-				let href = null;
-
-				if (metadata?.file_id) {
-					const pageAnchor = Number.isInteger(page) ? `#page=${page + 1}` : '';
-					href = `${WEBUI_API_BASE_URL}/files/${metadata.file_id}/content${pageAnchor}`;
-				} else if (typeof metadata?.url === 'string' && metadata.url.startsWith('http')) {
-					href = metadata.url;
-				} else if (typeof source?.source?.url === 'string' && source.source.url.startsWith('http')) {
-					href = source.source.url;
-				} else if (
-					typeof source?.source?.name === 'string' &&
-					source.source.name.startsWith('http')
-				) {
-					href = source.source.name;
-				}
-
-				entries.push({
-					title,
-					href,
-					page,
-					fileId: metadata?.file_id ?? null
-				});
-			});
-		});
-
-		return entries;
-	};
-
-	let sourceInfos = [];
-	$: sourceInfos = buildSourceInfos(sources ?? []);
 
 	const updateButtonPosition = (event) => {
 		const buttonsContainerElement = document.getElementById(`floating-buttons-${id}`);
@@ -192,7 +131,6 @@
 			document.removeEventListener('keydown', keydownHandler);
 		}
 	});
-
 </script>
 
 <div bind:this={contentContainerElement}>
@@ -205,7 +143,36 @@
 		{done}
 		{editCodeBlock}
 		{topPadding}
-		sourceIds={sourceInfos}
+		sourceIds={(sources ?? []).reduce((acc, source) => {
+			let ids = [];
+			source.document.forEach((document, index) => {
+				if (model?.info?.meta?.capabilities?.citations == false) {
+					ids.push('N/A');
+					return ids;
+				}
+
+				const metadata = source.metadata?.[index];
+				const id = metadata?.source ?? 'N/A';
+
+				if (metadata?.name) {
+					ids.push(metadata.name);
+					return ids;
+				}
+
+				if (id.startsWith('http://') || id.startsWith('https://')) {
+					ids.push(id);
+				} else {
+					ids.push(source?.source?.name ?? id);
+				}
+
+				return ids;
+			});
+
+			acc = [...acc, ...ids];
+
+			// remove duplicates
+			return acc.filter((item, index) => acc.indexOf(item) === index);
+		}, [])}
 		{onSourceClick}
 		{onTaskClick}
 		{onSave}
