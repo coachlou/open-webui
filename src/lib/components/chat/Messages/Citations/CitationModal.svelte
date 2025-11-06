@@ -34,19 +34,38 @@
 	}
 
 	$: if (citation) {
-		mergedDocuments = citation.document?.map((c, i) => {
-			return {
-				source: citation.source,
-				document: c,
-				metadata: citation.metadata?.[i],
-				distance: citation.distances?.[i]
-			};
+		mergedDocuments =
+			citation.document?.map((c, i) => {
+				return {
+					source: citation.source,
+					document: c,
+					metadata: citation.metadata?.[i],
+					distance: citation.distances?.[i]
+				};
+			}) ?? [];
+
+		mergedDocuments = mergedDocuments.sort((a, b) => {
+			const pageA =
+				typeof a?.metadata?.page === 'number' && !Number.isNaN(a.metadata.page)
+					? a.metadata.page
+					: undefined;
+			const pageB =
+				typeof b?.metadata?.page === 'number' && !Number.isNaN(b.metadata.page)
+					? b.metadata.page
+					: undefined;
+
+			if (pageA !== undefined && pageB !== undefined) {
+				return pageA - pageB;
+			}
+			if (pageA !== undefined) return -1;
+			if (pageB !== undefined) return 1;
+
+			const distA = a.distance ?? -Infinity;
+			const distB = b.distance ?? -Infinity;
+			return distB - distA;
 		});
-		if (mergedDocuments.every((doc) => doc.distance !== undefined)) {
-			mergedDocuments = mergedDocuments.sort(
-				(a, b) => (b.distance ?? Infinity) - (a.distance ?? Infinity)
-			);
-		}
+	} else {
+		mergedDocuments = [];
 	}
 
 	const decodeString = (str: string) => {
@@ -55,6 +74,26 @@
 		} catch (e) {
 			return str;
 		}
+	};
+
+	const getDocumentLink = (doc) => {
+		if (!doc) return null;
+		const page =
+			typeof doc?.metadata?.page === 'number' && !Number.isNaN(doc.metadata.page)
+				? doc.metadata.page + 1
+				: undefined;
+
+		if (doc?.metadata?.file_id) {
+			return `${WEBUI_API_BASE_URL}/files/${doc.metadata.file_id}/content${
+				page ? `#page=${page}` : ''
+			}`;
+		}
+
+		if (doc?.source?.url && doc.source.url.startsWith('http')) {
+			return doc.source.url;
+		}
+
+		return null;
 	};
 </script>
 
@@ -107,7 +146,12 @@
 				class="flex flex-col w-full dark:text-gray-200 overflow-y-scroll max-h-[22rem] scrollbar-thin gap-1"
 			>
 				{#each mergedDocuments as document, documentIdx}
-					<div class="flex flex-col w-full gap-2">
+					{@const pageLink = getDocumentLink(document)}
+					{@const pageDisplay =
+						typeof document?.metadata?.page === 'number' && !Number.isNaN(document.metadata.page)
+							? document.metadata.page + 1
+							: null}
+					<div class="flex flex-col w-full gap-3 rounded-lg border border-gray-200/70 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/40 p-3">
 						{#if document.metadata?.parameters}
 							<div>
 								<div class="text-sm font-medium dark:text-gray-300 mb-1">
@@ -119,58 +163,70 @@
 							</div>
 						{/if}
 
-						<div>
-							<div
-								class=" text-sm font-medium dark:text-gray-300 flex items-center gap-2 w-fit mb-1"
-							>
-								{$i18n.t('Content')}
+						<div class="flex flex-col gap-2">
+							<header class="flex flex-wrap items-center justify-between gap-2">
+								<div class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+									{decodeString(citation?.source?.name)}
+								</div>
 
-								{#if showRelevance && document.distance !== undefined}
-									<Tooltip
-										className="w-fit"
-										content={$i18n.t('Relevance')}
-										placement="top-start"
-										tippyOptions={{ duration: [500, 0] }}
-									>
-										<div class="text-sm my-1 dark:text-gray-400 flex items-center gap-2 w-fit">
+								<div class="flex items-center gap-2 text-xs">
+									{#if pageDisplay}
+										{#if pageLink}
+											<a
+												class="inline-flex items-center gap-1 font-medium text-emerald-600 hover:text-emerald-500 underline decoration-dotted hover:decoration-solid"
+												href={pageLink}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												{$i18n.t('Page')} {pageDisplay}
+												<span aria-hidden="true">↗</span>
+											</a>
+										{:else}
+											<span class="font-medium text-gray-500 dark:text-gray-400">
+												{$i18n.t('Page')} {pageDisplay}
+											</span>
+										{/if}
+									{/if}
+
+									{#if showRelevance && document.distance !== undefined}
+										<Tooltip
+											className="w-fit"
+											content={$i18n.t('Relevance')}
+											placement="top-start"
+											tippyOptions={{ duration: [500, 0] }}
+										>
 											{#if showPercentage}
 												{@const percentage = calculatePercentage(document.distance)}
-
 												{#if typeof percentage === 'number'}
 													<span
-														class={`px-1 rounded-sm font-medium ${getRelevanceColor(percentage)}`}
+														class={`px-1.5 py-0.5 rounded-md text-[0.65rem] font-semibold ${getRelevanceColor(
+															percentage
+														)}`}
 													>
-														{percentage.toFixed(2)}%
+														{percentage.toFixed(1)}%
 													</span>
 												{/if}
 											{:else if typeof document?.distance === 'number'}
-												<span class="text-gray-500 dark:text-gray-500">
-													({(document?.distance ?? 0).toFixed(4)})
+												<span class="text-xs text-gray-400 dark:text-gray-500">
+													{(document?.distance ?? 0).toFixed(4)}
 												</span>
 											{/if}
-										</div>
-									</Tooltip>
-								{/if}
-
-								{#if Number.isInteger(document?.metadata?.page)}
-									<span class="text-sm text-gray-500 dark:text-gray-400">
-										({$i18n.t('page')}
-										{document.metadata.page + 1})
-									</span>
-								{/if}
-							</div>
+										</Tooltip>
+									{/if}
+								</div>
+							</header>
 
 							{#if document.metadata?.html}
 								<iframe
-									class="w-full border-0 h-auto rounded-none"
+									class="w-full border border-gray-200 dark:border-gray-800 rounded-md"
 									sandbox="allow-scripts allow-forms allow-same-origin"
 									srcdoc={document.document}
 									title={$i18n.t('Content')}
 								></iframe>
 							{:else}
-								<pre class="text-sm dark:text-gray-400 whitespace-pre-line">
-                {document.document}
-              </pre>
+								<div class="prose prose-sm dark:prose-invert max-w-none bg-white/80 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 rounded-md p-3">
+									<p class="whitespace-pre-line">{document.document}</p>
+								</div>
 							{/if}
 						</div>
 					</div>

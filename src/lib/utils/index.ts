@@ -68,27 +68,70 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 		});
 
 		if (Array.isArray(sourceIds)) {
-			// Match both [1], [2], and [1,2,3] forms
-			const multiRefRegex = /\[([\d,\s]+)\]/g;
-			segment = segment.replace(multiRefRegex, (match, group) => {
-				// Extract numbers like 1,2,3
-				const indices = group
-					.split(',')
-					.map((n) => parseInt(n.trim(), 10))
-					.filter((n) => !isNaN(n));
+			const bracketRegex = /\[([^\]]+)\]/g;
+			segment = segment.replace(bracketRegex, (match, inner) => {
+				const citationRegex = /(\d+)(?:\((\d+)\))?/g;
+				let rendered = '';
+				let hasMatch = false;
 
-				// Replace each index with a <source_id> tag
-				const sources = indices
-					.map((idx) => {
-						const sourceId = sourceIds[idx - 1];
-						return sourceId
-							? `<source_id data="${idx}" title="${encodeURIComponent(sourceId)}" />`
-							: `[${idx}]`;
-					})
-					.join('');
+				let citationMatch;
+				while ((citationMatch = citationRegex.exec(inner)) !== null) {
+					const idx = parseInt(citationMatch[1], 10);
+					if (Number.isNaN(idx) || idx < 1) {
+						continue;
+					}
 
-				return sources;
+					const sourceInfo = sourceIds[idx - 1];
+					if (!sourceInfo) {
+						continue;
+					}
+
+					const attrs = [`data="${idx}"`];
+					const title =
+						typeof sourceInfo === 'string'
+							? sourceInfo
+							: sourceInfo?.title ?? 'N/A';
+					attrs.push(`title="${encodeURIComponent(title)}"`);
+
+					const pageFromMetadata =
+						typeof sourceInfo === 'object' &&
+						sourceInfo?.page !== undefined &&
+						sourceInfo?.page !== null &&
+						!Number.isNaN(Number(sourceInfo.page))
+							? Number(sourceInfo.page)
+							: undefined;
+
+					const pageFromCitation =
+						citationMatch[2] !== undefined
+							? Number(citationMatch[2]) - 1
+							: undefined;
+
+					const pageValue =
+						pageFromMetadata !== undefined
+							? pageFromMetadata
+							: pageFromCitation !== undefined
+								? pageFromCitation
+								: undefined;
+
+					if (pageValue !== undefined && !Number.isNaN(pageValue)) {
+						attrs.push(`data-page="${pageValue}"`);
+					}
+
+					const href =
+						typeof sourceInfo === 'object' ? sourceInfo?.href ?? null : null;
+					if (href) {
+						attrs.push(`data-href="${encodeURIComponent(href)}"`);
+					}
+
+					rendered += `<source_id ${attrs.join(' ')} />`;
+					hasMatch = true;
+				}
+
+				return hasMatch ? rendered : '';
 			});
+
+			const duplicateTagRegex = /(<source_id [^>]+\/>)(\s*\1)+/g;
+			segment = segment.replace(duplicateTagRegex, '$1');
 		}
 
 		return segment;

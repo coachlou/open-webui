@@ -6,11 +6,10 @@
 	let attributes: Record<string, string | undefined> = {};
 
 	function extractAttributes(input: string): Record<string, string> {
-		const regex = /(\w+)="([^"]*)"/g;
+		const regex = /([a-zA-Z0-9-]+)="([^"]*)"/g;
 		let match;
 		let attrs: Record<string, string> = {};
 
-		// Loop through all matches and populate the attributes object
 		while ((match = regex.exec(input)) !== null) {
 			attrs[match[1]] = match[2];
 		}
@@ -18,49 +17,49 @@
 		return attrs;
 	}
 
-	// Helper function to return only the domain from a URL
-	function getDomain(url: string): string {
-		const domain = url.replace('http://', '').replace('https://', '').split(/[/?#]/)[0];
-
-		if (domain.startsWith('www.')) {
-			return domain.slice(4);
-		}
-		return domain;
-	}
-
-	// Helper function to check if text is a URL and return the domain
-	function formattedTitle(title: string): string {
-		if (title.startsWith('http')) {
-			return getDomain(title);
-		}
-
-		return title;
-	}
-
-	const getDisplayTitle = (title: string) => {
-		if (!title) return 'N/A';
-		if (title.length > 30) {
-			return title.slice(0, 15) + '...' + title.slice(-10);
-		}
-		return title;
-	};
-
 	$: attributes = extractAttributes(token.text);
+
+	$: href =
+		attributes['data-href'] && attributes['data-href'] !== 'undefined'
+			? decodeURIComponent(attributes['data-href'])
+			: null;
+
+	$: indexLabel = attributes.data ?? attributes['data'] ?? '?';
+
+	$: pageNumber =
+		attributes['data-page'] !== undefined && attributes['data-page'] !== null
+			? Number(attributes['data-page'])
+			: undefined;
+
+	$: pageDisplay =
+		Number.isFinite(pageNumber) && !Number.isNaN(pageNumber) ? pageNumber + 1 : undefined;
+
+	$: titleText =
+		attributes.title && attributes.title !== 'N/A'
+			? decodeURIComponent(attributes.title)
+			: '';
+
+	$: displayLabel = `[${indexLabel}${pageDisplay !== undefined ? `(${pageDisplay})` : ''}]`;
 </script>
 
-{#if attributes.title !== 'N/A'}
+{#if href}
+	<a
+		class="text-xs font-medium inline-flex items-center text-emerald-500 hover:text-emerald-600 underline decoration-dotted hover:decoration-solid transition"
+		href={href}
+		target="_blank"
+		rel="noopener noreferrer"
+		title={titleText || undefined}
+	>
+		{displayLabel}
+	</a>
+{:else}
 	<button
-		class="text-xs font-medium w-fit translate-y-[2px] px-2 py-0.5 dark:bg-white/5 dark:text-white/60 dark:hover:text-white bg-gray-50 text-black/60 hover:text-black transition rounded-lg"
+		class="text-xs font-medium inline-flex items-center text-emerald-500 hover:text-emerald-600 underline decoration-dotted hover:decoration-solid transition bg-transparent px-1 py-0"
 		on:click={() => {
 			onClick(id, attributes.data);
 		}}
+		title={titleText || undefined}
 	>
-		<span class="line-clamp-1">
-			{getDisplayTitle(
-				decodeURIComponent(attributes.title)
-					? formattedTitle(decodeURIComponent(attributes.title))
-					: ''
-			)}
-		</span>
+		{displayLabel}
 	</button>
 {/if}
