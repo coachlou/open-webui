@@ -23,14 +23,14 @@ from langchain_community.document_loaders import (
 )
 from langchain_core.documents import Document
 
-from open_webui.retrieval.loaders.external_document import ExternalDocumentLoader
+from app.retrieval.loaders.external_document import ExternalDocumentLoader
 
-from open_webui.retrieval.loaders.mistral import MistralLoader
-from open_webui.retrieval.loaders.datalab_marker import DatalabMarkerLoader
-from open_webui.retrieval.loaders.mineru import MinerULoader
+from app.retrieval.loaders.mistral import MistralLoader
+from app.retrieval.loaders.datalab_marker import DatalabMarkerLoader
+from app.retrieval.loaders.mineru import MinerULoader
 
 
-from open_webui.env import SRC_LOG_LEVELS, GLOBAL_LOG_LEVEL
+from app.env import SRC_LOG_LEVELS, GLOBAL_LOG_LEVEL
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)
