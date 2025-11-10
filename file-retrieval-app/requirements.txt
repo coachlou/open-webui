@@ -1,0 +1,73 @@
+# File Ingestion and Retrieval App - Minimal Dependencies
+
+# Core Framework
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+pydantic==2.11.9
+python-multipart==0.0.20
+
+# Database
+sqlalchemy==2.0.38
+alembic==1.14.0
+
+# Authentication & Security
+python-jose==3.4.0
+cryptography
+bcrypt==5.0.0
+PyJWT[crypto]==2.10.1
+
+# HTTP & Requests
+requests==2.32.5
+aiohttp==3.12.15
+httpx==0.28.1
+
+# Document Processing & Loaders
+langchain==0.3.27
+langchain-community==0.3.29
+
+# File Format Support
+pypdf==6.0.0                      # PDF files
+docx2txt==0.8                     # Word documents
+python-pptx==1.0.2                # PowerPoint files
+unstructured==0.16.17             # Various formats
+pandas==2.2.3                     # CSV, Excel
+openpyxl==3.1.5                   # Excel XLSX
+python-magic                      # File type detection
+
+# Vector Database (ChromaDB - default)
+chromadb==1.1.0
+
+# Embeddings & ML
+sentence-transformers==5.1.1
+transformers
+tiktoken
+torch                             # PyTorch for models
+accelerate                        # Model optimization
+
+# Text Processing
+ftfy==6.2.3                       # Text cleaning
+Markdown==3.9
+nltk==3.9.1
+
+# Search Enhancement
+rank-bm25==0.2.2                  # Hybrid search (BM25)
+
+# Utilities
+validators==0.35.0
+loguru==0.7.3
+
+# Storage Providers (Optional - uncomment as needed)
+# boto3==1.40.5                   # AWS S3
+# google-cloud-storage==2.19.0    # Google Cloud Storage
+# azure-storage-blob==12.24.1     # Azure Blob Storage
+
+# OCR & Advanced Processing (Optional)
+# rapidocr-onnxruntime==1.4.4     # OCR support
+# pillow==11.3.0                  # Image processing
+
+# Audio Transcription (Optional)
+# faster-whisper==1.1.1           # Audio to text
+# soundfile==0.13.1
+
+# Reranking Models (Optional)
+# colbert-ai==0.2.21              # ColBERT reranking
