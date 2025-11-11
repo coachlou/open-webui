@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { marked } from 'marked';
 	import { replaceTokens, processResponseContent } from '$lib/utils';
 	import { user } from '$lib/stores';
@@ -8,6 +8,7 @@
 	import { mentionExtension } from '$lib/utils/marked/mention-extension';
 
 	import MarkdownTokens from './Markdown/MarkdownTokens.svelte';
+	import type { CitationLinkTarget } from './types';
 
 	export let id = '';
 	export let content;
@@ -19,7 +20,8 @@
 	export let editCodeBlock = true;
 	export let topPadding = false;
 
-	export let sourceIds = [];
+export let sourceIds = [];
+export let sourceTargets: CitationLinkTarget[] = [];
 
 	export let onSave = () => {};
 	export let onUpdate = () => {};
@@ -60,6 +62,7 @@
 		{preview}
 		{editCodeBlock}
 		{topPadding}
+		{sourceTargets}
 		{onTaskClick}
 		{onSourceClick}
 		{onSave}

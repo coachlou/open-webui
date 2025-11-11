@@ -19,9 +19,10 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '$lib/components/icons/Download.svelte';
 
-	import Source from './Source.svelte';
-	import { settings } from '$lib/stores';
-	import HtmlToken from './HTMLToken.svelte';
+import Source from './Source.svelte';
+import { settings } from '$lib/stores';
+import HtmlToken from './HTMLToken.svelte';
+import type { CitationLinkTarget } from '../types';
 
 	export let id: string;
 	export let tokens: Token[];
@@ -38,10 +39,11 @@
 
 	export let onSave: Function = () => {};
 	export let onUpdate: Function = () => {};
-	export let onPreview: Function = () => {};
+export let onPreview: Function = () => {};
 
-	export let onTaskClick: Function = () => {};
-	export let onSourceClick: Function = () => {};
+export let onTaskClick: Function = () => {};
+export let onSourceClick: Function = () => {};
+export let sourceTargets: CitationLinkTarget[] = [];
 
 	const headerComponent = (depth: number) => {
 		return 'h' + depth;
@@ -93,6 +95,7 @@
 			<MarkdownInlineTokens
 				id={`${id}-${tokenIdx}-h`}
 				tokens={token.tokens}
+				{sourceTargets}
 				{done}
 				{onSourceClick}
 			/>
@@ -144,6 +147,7 @@
 											<MarkdownInlineTokens
 												id={`${id}-${tokenIdx}-header-${headerIdx}`}
 												tokens={header.tokens}
+												{sourceTargets}
 												{done}
 												{onSourceClick}
 											/>
@@ -169,6 +173,7 @@
 											<MarkdownInlineTokens
 												id={`${id}-${tokenIdx}-row-${rowIdx}-${cellIdx}`}
 												tokens={cell.tokens}
+												{sourceTargets}
 												{done}
 												{onSourceClick}
 											/>
@@ -207,6 +212,7 @@
 					{done}
 					{editCodeBlock}
 					{onTaskClick}
+					{sourceTargets}
 					{onSourceClick}
 				/>
 			</blockquote>
@@ -241,6 +247,7 @@
 							{done}
 							{editCodeBlock}
 							{onTaskClick}
+							{sourceTargets}
 							{onSourceClick}
 						/>
 					</li>
@@ -275,6 +282,7 @@
 									{done}
 									{editCodeBlock}
 									{onTaskClick}
+									{sourceTargets}
 									{onSourceClick}
 								/>
 							</div>
@@ -286,6 +294,7 @@
 								{done}
 								{editCodeBlock}
 								{onTaskClick}
+								{sourceTargets}
 								{onSourceClick}
 							/>
 						{/if}
@@ -309,12 +318,13 @@
 					{done}
 					{editCodeBlock}
 					{onTaskClick}
+					{sourceTargets}
 					{onSourceClick}
 				/>
 			</div>
 		</Collapsible>
 	{:else if token.type === 'html'}
-		<HtmlToken {id} {token} {onSourceClick} />
+		<HtmlToken {id} {token} {onSourceClick} {sourceTargets} />
 	{:else if token.type === 'iframe'}
 		<iframe
 			src="{WEBUI_BASE_URL}/api/v1/files/{token.fileId}/content"
@@ -329,6 +339,7 @@
 				id={`${id}-${tokenIdx}-p`}
 				tokens={token.tokens ?? []}
 				{done}
+				{sourceTargets}
 				{onSourceClick}
 			/>
 		</p>
@@ -340,6 +351,7 @@
 						id={`${id}-${tokenIdx}-t`}
 						tokens={token.tokens}
 						{done}
+						{sourceTargets}
 						{onSourceClick}
 					/>
 				{:else}
@@ -351,6 +363,7 @@
 				id={`${id}-${tokenIdx}-p`}
 				tokens={token.tokens ?? []}
 				{done}
+				{sourceTargets}
 				{onSourceClick}
 			/>
 		{:else}
