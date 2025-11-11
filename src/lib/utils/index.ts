@@ -105,6 +105,19 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 				return sources;
 			});
 
+			// Match dagger style citations like †(1:p25)
+			const daggerColonRegex = /(?:†|‡|\u2020|\u2021)\s*\(\s*(\d+)\s*:\s*([^)]+)\)/g;
+			segment = segment.replace(daggerColonRegex, (match, idx, page) => {
+				const citationIdx = parseInt(idx, 10);
+				if (Number.isNaN(citationIdx)) {
+					return match;
+				}
+
+				const pageLabel = page?.trim();
+				const sourceTag = buildSourceTag(citationIdx, pageLabel);
+				return sourceTag ?? match;
+			});
+
 			// Match dagger style citations like †1 or †1(25)
 			const daggerRegex = /(?:†|‡|\u2020|\u2021)\s*(\d+)(?:\s*\(([^)]+)\))?/g;
 			segment = segment.replace(daggerRegex, (match, idx, page) => {
