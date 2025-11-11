@@ -1,0 +1,134 @@
+services:
+  open-webui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USE_CUDA: "false"
+        USE_OLLAMA: "false"
+        USE_SLIM: "false"
+        # Embedding model (if you want to bundle it in the image)
+        # Leave default for OpenAI embeddings via API
+        USE_EMBEDDING_MODEL: "text-embedding-3-small"
+        BUILD_HASH: "${GIT_COMMIT_SHA:-latest}"
+
+    # Image name (Coolify can push to registry)
+    image: jansen-owui:${TAG:-latest}
+
+    container_name: jansen-owui-fork
+
+    # Persistent volume for database and uploaded files
+    volumes:
+      - open-webui-data:/app/backend/data
+
+    # Expose port 8080 for Coolify's proxy (no host port binding)
+    # Coolify will automatically route traffic via its reverse proxy
+    expose:
+      - "8080"
+
+    environment:
+      # ============================================
+      # SECURITY (REQUIRED)
+      # ============================================
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:?WEBUI_SECRET_KEY is required}
+
+      # ============================================
+      # QDRANT CLOUD (REQUIRED)
+      # ============================================
+      - VECTOR_DB=qdrant
+      - QDRANT_URI=${QDRANT_URI:?QDRANT_URI is required}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:?QDRANT_API_KEY is required}
+
+      # ============================================
+      # OPENAI FOR EMBEDDINGS (REQUIRED)
+      # ============================================
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY is required}
+      - OPENAI_API_BASE_URL=${OPENAI_API_BASE_URL:-}
+      - RAG_EMBEDDING_MODEL=${RAG_EMBEDDING_MODEL:-text-embedding-3-small}
+      - RAG_EMBEDDING_ENGINE=${RAG_EMBEDDING_ENGINE:-openai}
+
+      # ============================================
+      # OLLAMA (OPTIONAL - External Service)
+      # ============================================
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+
+      # ============================================
+      # APPLICATION CONFIG
+      # ============================================
+      - PORT=8080
+      - ENV=prod
+      - DATA_DIR=/app/backend/data
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+      - ENABLE_LOGIN_FORM=${ENABLE_LOGIN_FORM:-true}
+      - DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE:-user}
+
+      # ============================================
+      # CORS AND SECURITY
+      # ============================================
+      - CORS_ALLOW_ORIGIN=${CORS_ALLOW_ORIGIN:-*}
+      - FORWARDED_ALLOW_IPS=${FORWARDED_ALLOW_IPS:-*}
+
+      # ============================================
+      # ANALYTICS (DISABLED)
+      # ============================================
+      - SCARF_NO_ANALYTICS=true
+      - DO_NOT_TRACK=true
+      - ANONYMIZED_TELEMETRY=false
+      - ENABLE_COMMUNITY_SHARING=false
+
+      # ============================================
+      # RAG SETTINGS
+      # ============================================
+      - RAG_TOP_K=${RAG_TOP_K:-5}
+      - ENABLE_RAG_WEB_SEARCH=${ENABLE_RAG_WEB_SEARCH:-false}
+      - ENABLE_RAG_LOCAL_WEB_FETCH=${ENABLE_RAG_LOCAL_WEB_FETCH:-false}
+
+      # ============================================
+      # CACHE DIRECTORIES
+      # ============================================
+      - SENTENCE_TRANSFORMERS_HOME=/app/backend/data/cache/embedding/models
+      - HF_HOME=/app/backend/data/cache/embedding/models
+      - TIKTOKEN_CACHE_DIR=/app/backend/data/cache/tiktoken
+      - WHISPER_MODEL_DIR=/app/backend/data/cache/whisper/models
+
+      # ============================================
+      # DOCKER ENVIRONMENT
+      # ============================================
+      - DOCKER=true
+      - WEBUI_BUILD_VERSION=${GIT_COMMIT_SHA:-latest}
+
+    # Allow access to host for external Ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (adjust based on your VPS)
+    deploy:
+      resources:
+        limits:
+          memory: 32G
+          cpus: '8'
+        reservations:
+          memory: 16G
+          cpus: '6'
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  open-webui-data:
+    driver: local
