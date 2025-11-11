@@ -15,7 +15,8 @@
 	} from '$lib/stores';
 	import FloatingButtons from '../ContentRenderer/FloatingButtons.svelte';
 	import { createMessagesList } from '$lib/utils';
-	import { normalizeCitations, buildDocumentUrl } from '$lib/utils/citations';
+	import { normalizeCitations, buildDocumentUrl, extractPageInfo } from '$lib/utils/citations';
+	import type { CitationLinkTarget } from './types';
 
 	export let id;
 	export let content;
@@ -46,7 +47,7 @@
 
 	let normalizedCitations = [];
 	let citationSourceIds: string[] = [];
-	let citationTargets: (string | null)[] = [];
+	let citationTargets: CitationLinkTarget[] = [];
 
 	$: normalizedCitations = normalizeCitations(sources ?? []);
 	$: citationSourceIds =
@@ -59,9 +60,40 @@
 		normalizedCitations.length === 0
 			? []
 			: normalizedCitations.map((citation) => {
+					const pageTargets: Record<string, string | null> = {};
+
+					citation.metadata?.forEach((metadata) => {
+						if (!metadata) return;
+						const url = buildDocumentUrl(metadata, citation.source);
+						if (!url) return;
+
+						const pageInfo = extractPageInfo(metadata);
+
+						const possibleKeys = [
+							pageInfo.display?.trim(),
+							pageInfo.anchor !== null ? String(pageInfo.anchor) : null,
+							typeof metadata.page === 'number' ? String(metadata.page + 1) : null,
+							typeof metadata.page === 'number' ? String(metadata.page) : null,
+							metadata.page_label ? String(metadata.page_label).trim() : null,
+							metadata.pageLabel ? String(metadata.pageLabel).trim() : null
+						];
+
+						possibleKeys
+							.filter((key): key is string => !!key && key.length > 0)
+							.forEach((key) => {
+								if (!(key in pageTargets)) {
+									pageTargets[key] = url;
+								}
+							});
+					});
+
 					const metadataWithFileId =
 						citation.metadata?.find((meta) => meta?.file_id) ?? citation.metadata?.[0];
-					return buildDocumentUrl(metadataWithFileId, citation.source);
+
+					return {
+						defaultTarget: buildDocumentUrl(metadataWithFileId, citation.source),
+						pageTargets
+					};
 				});
 
 	const updateButtonPosition = (event) => {

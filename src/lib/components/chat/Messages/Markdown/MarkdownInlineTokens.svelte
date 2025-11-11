@@ -10,19 +10,20 @@
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import { copyToClipboard, unescapeHtml } from '$lib/utils';
 
-	import Image from '$lib/components/common/Image.svelte';
-	import KatexRenderer from './KatexRenderer.svelte';
-	import Source from './Source.svelte';
-	import HtmlToken from './HTMLToken.svelte';
-	import TextToken from './MarkdownInlineTokens/TextToken.svelte';
-	import CodespanToken from './MarkdownInlineTokens/CodespanToken.svelte';
-	import MentionToken from './MarkdownInlineTokens/MentionToken.svelte';
+import Image from '$lib/components/common/Image.svelte';
+import KatexRenderer from './KatexRenderer.svelte';
+import Source from './Source.svelte';
+import HtmlToken from './HTMLToken.svelte';
+import TextToken from './MarkdownInlineTokens/TextToken.svelte';
+import CodespanToken from './MarkdownInlineTokens/CodespanToken.svelte';
+import MentionToken from './MarkdownInlineTokens/MentionToken.svelte';
+import type { CitationLinkTarget } from '../types';
 
-	export let id: string;
-	export let done = true;
+export let id: string;
+export let done = true;
 export let tokens: Token[];
 export let onSourceClick: Function = () => {};
-export let sourceTargets = [];
+export let sourceTargets: CitationLinkTarget[] = [];
 </script>
 
 {#each tokens as token}

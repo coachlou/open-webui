@@ -19,9 +19,10 @@
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Download from '$lib/components/icons/Download.svelte';
 
-	import Source from './Source.svelte';
-	import { settings } from '$lib/stores';
-	import HtmlToken from './HTMLToken.svelte';
+import Source from './Source.svelte';
+import { settings } from '$lib/stores';
+import HtmlToken from './HTMLToken.svelte';
+import type { CitationLinkTarget } from '../types';
 
 	export let id: string;
 	export let tokens: Token[];
@@ -42,7 +43,7 @@ export let onPreview: Function = () => {};
 
 export let onTaskClick: Function = () => {};
 export let onSourceClick: Function = () => {};
-export let sourceTargets = [];
+export let sourceTargets: CitationLinkTarget[] = [];
 
 	const headerComponent = (depth: number) => {
 		return 'h' + depth;

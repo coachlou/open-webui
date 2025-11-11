@@ -67,7 +67,24 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 			}
 		});
 
-		if (Array.isArray(sourceIds)) {
+		const buildSourceTag = (idx: number, pageLabel?: string) => {
+			if (!Array.isArray(sourceIds) || sourceIds.length === 0) return null;
+			const sourceId = sourceIds[idx - 1];
+			if (!sourceId) return null;
+
+			const attributes = [
+				`data="${idx}"`,
+				`title="${encodeURIComponent(sourceId)}"`
+			];
+
+			if (pageLabel && pageLabel.length > 0) {
+				attributes.push(`data-page="${encodeURIComponent(pageLabel)}"`);
+			}
+
+			return `<source_id ${attributes.join(' ')} />`;
+		};
+
+		if (Array.isArray(sourceIds) && sourceIds.length > 0) {
 			// Match both [1], [2], and [1,2,3] forms
 			const multiRefRegex = /\[([\d,\s]+)\]/g;
 			segment = segment.replace(multiRefRegex, (match, group) => {
@@ -80,14 +97,29 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 				// Replace each index with a <source_id> tag
 				const sources = indices
 					.map((idx) => {
-						const sourceId = sourceIds[idx - 1];
-						return sourceId
-							? `<source_id data="${idx}" title="${encodeURIComponent(sourceId)}" />`
-							: `[${idx}]`;
+						const sourceTag = buildSourceTag(idx);
+						return sourceTag ?? `[${idx}]`;
 					})
 					.join('');
 
 				return sources;
+			});
+
+			// Match dagger style citations like †1 or †1(25)
+			const daggerRegex = /(?:†|‡|\u2020|\u2021)\s*(\d+)(?:\s*\(([^)]+)\))?/g;
+			segment = segment.replace(daggerRegex, (match, idx, page) => {
+				const citationIdx = parseInt(idx, 10);
+				if (Number.isNaN(citationIdx)) {
+					return match;
+				}
+
+				const pageLabel = page?.trim();
+				const sourceTag = buildSourceTag(citationIdx, pageLabel);
+				if (!sourceTag) {
+					return match;
+				}
+
+				return `${sourceTag}`;
 			});
 		}
 

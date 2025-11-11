@@ -3,14 +3,15 @@
 	import type { Token } from 'marked';
 
 	import { WEBUI_BASE_URL } from '$lib/constants';
-	import Source from './Source.svelte';
-	import { settings } from '$lib/stores';
+import Source from './Source.svelte';
+import { settings } from '$lib/stores';
+import type { CitationLinkTarget } from '../types';
 
-	export let id: string;
-	export let token: Token;
+export let id: string;
+export let token: Token;
 
-	export let onSourceClick: Function = () => {};
-	export let sourceTargets = [];
+export let onSourceClick: Function = () => {};
+export let sourceTargets: CitationLinkTarget[] = [];
 
 	let html: string | null = null;
 
