@@ -2,6 +2,12 @@
 node_modules
 /build
 /.svelte-kit
+backend/open_webui/static/swagger-ui/
+backend/venv/
+backend/venv/**
+file-retrieval-app/venv/
+file-retrieval-app/venv/**
+cypress
 /package
 .env
 .env.*

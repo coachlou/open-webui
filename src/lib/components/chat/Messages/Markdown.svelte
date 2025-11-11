@@ -19,7 +19,8 @@
 	export let editCodeBlock = true;
 	export let topPadding = false;
 
-	export let sourceIds = [];
+export let sourceIds = [];
+export let sourceTargets = [];
 
 	export let onSave = () => {};
 	export let onUpdate = () => {};
@@ -60,6 +61,7 @@
 		{preview}
 		{editCodeBlock}
 		{topPadding}
+		{sourceTargets}
 		{onTaskClick}
 		{onSourceClick}
 		{onSave}

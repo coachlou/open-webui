@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { onDestroy, onMount, tick, getContext } from 'svelte';
 	const i18n = getContext('i18n');
 
@@ -15,6 +15,7 @@
 	} from '$lib/stores';
 	import FloatingButtons from '../ContentRenderer/FloatingButtons.svelte';
 	import { createMessagesList } from '$lib/utils';
+	import { normalizeCitations, buildDocumentUrl } from '$lib/utils/citations';
 
 	export let id;
 	export let content;
@@ -42,6 +43,26 @@
 
 	let contentContainerElement;
 	let floatingButtonsElement;
+
+	let normalizedCitations = [];
+	let citationSourceIds: string[] = [];
+	let citationTargets: (string | null)[] = [];
+
+	$: normalizedCitations = normalizeCitations(sources ?? []);
+	$: citationSourceIds =
+		normalizedCitations.length === 0
+			? []
+			: model?.info?.meta?.capabilities?.citations === false
+				? ['N/A']
+				: normalizedCitations.map((citation) => citation.displayName ?? 'N/A');
+	$: citationTargets =
+		normalizedCitations.length === 0
+			? []
+			: normalizedCitations.map((citation) => {
+					const metadataWithFileId =
+						citation.metadata?.find((meta) => meta?.file_id) ?? citation.metadata?.[0];
+					return buildDocumentUrl(metadataWithFileId, citation.source);
+				});
 
 	const updateButtonPosition = (event) => {
 		const buttonsContainerElement = document.getElementById(`floating-buttons-${id}`);
@@ -143,36 +164,8 @@
 		{done}
 		{editCodeBlock}
 		{topPadding}
-		sourceIds={(sources ?? []).reduce((acc, source) => {
-			let ids = [];
-			source.document.forEach((document, index) => {
-				if (model?.info?.meta?.capabilities?.citations == false) {
-					ids.push('N/A');
-					return ids;
-				}
-
-				const metadata = source.metadata?.[index];
-				const id = metadata?.source ?? 'N/A';
-
-				if (metadata?.name) {
-					ids.push(metadata.name);
-					return ids;
-				}
-
-				if (id.startsWith('http://') || id.startsWith('https://')) {
-					ids.push(id);
-				} else {
-					ids.push(source?.source?.name ?? id);
-				}
-
-				return ids;
-			});
-
-			acc = [...acc, ...ids];
-
-			// remove duplicates
-			return acc.filter((item, index) => acc.indexOf(item) === index);
-		}, [])}
+		sourceIds={citationSourceIds}
+		sourceTargets={citationTargets}
 		{onSourceClick}
 		{onTaskClick}
 		{onSave}

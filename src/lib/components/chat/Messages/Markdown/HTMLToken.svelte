@@ -10,6 +10,7 @@
 	export let token: Token;
 
 	export let onSourceClick: Function = () => {};
+	export let sourceTargets = [];
 
 	let html: string | null = null;
 
@@ -120,7 +121,7 @@
 			></iframe>
 		{/if}
 	{:else if token.text.includes(`<source_id`)}
-		<Source {id} {token} onClick={onSourceClick} />
+		<Source {id} {token} {sourceTargets} onClick={onSourceClick} />
 	{:else}
 		{@const br = token.text.match(/<br\s*\/?>/)}
 		{#if br}
