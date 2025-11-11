@@ -38,7 +38,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --force
 
 COPY . .
-ENV APP_BUILD_HASH=${BUILD_HASH}
+ENV APP_BUILD_HASH=${BUILD_HASH} \
+    SKIP_PYODIDE_FETCH=1
 RUN npm run build
 
 ######## WebUI backend ########

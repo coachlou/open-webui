@@ -1,3 +1,8 @@
+if (process.env.SKIP_PYODIDE_FETCH === '1') {
+	console.log('Skipping Pyodide fetch (SKIP_PYODIDE_FETCH=1)');
+	process.exit(0);
+}
+
 const packages = [
 	'micropip',
 	'packaging',
