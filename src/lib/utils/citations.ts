@@ -34,9 +34,9 @@ export const normalizeCitations = (rawSources: any[] = []): NormalizedCitation[]
 		const metadatas = Array.isArray(sourceEntry.metadata) ? sourceEntry.metadata : [];
 		const distances = Array.isArray(sourceEntry.distances) ? sourceEntry.distances : [];
 
-		documents.forEach((document, index) => {
-			const metadata = metadatas[index];
-			const distance = distances[index];
+		documents.forEach((document: unknown, index: number) => {
+			const metadata: CitationMetadata | undefined = metadatas[index];
+			const distance: number | undefined = distances[index];
 			const candidateId =
 				metadata?.source ??
 				metadata?.file_id ??
