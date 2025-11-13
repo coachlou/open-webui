@@ -15,6 +15,51 @@ let displayLabel: string = '';
 let displayHints: string[] = [];
 let pageLinks: { label: string; url: string | null }[] = [];
 
+	const stripDocPrefix = (hint: string): string => {
+		const trimmed = hint.trim();
+		const lastColon = trimmed.lastIndexOf(':');
+		if (lastColon !== -1) {
+			return trimmed.slice(lastColon + 1).trim();
+		}
+		return trimmed;
+	};
+
+	const deriveAnchorFromHint = (hint: string | null | undefined): number | null => {
+		if (!hint) return null;
+		const normalized = stripDocPrefix(hint);
+		const match = normalized.match(/\d+/);
+		if (!match) return null;
+		const anchor = Number(match[0]);
+		return Number.isNaN(anchor) ? null : anchor;
+	};
+
+	const canApplyAnchor = (url: string | null | undefined) => {
+		if (typeof url !== 'string') return false;
+		return /\/files\//.test(url);
+	};
+
+	const buildUrlWithAnchor = (url: string | null | undefined, anchor: number | null) => {
+		if (!url || anchor === null || !canApplyAnchor(url)) return null;
+		return `${url.replace(/#page=\d+/i, '')}#page=${anchor}`;
+	};
+
+	const fallbackAnchorUrl = (hint: string | null | undefined, entry: CitationLinkTarget | undefined) => {
+		if (!entry?.defaultTarget) return null;
+		const anchor = deriveAnchorFromHint(hint);
+		if (anchor === null) return null;
+		return buildUrlWithAnchor(entry.defaultTarget, anchor);
+	};
+
+	const formatDisplayHint = (hint: string | null | undefined): string => {
+		if (!hint) return '';
+		const normalized = stripDocPrefix(hint);
+		const prefixMatch = normalized.match(/^[^\d]+/);
+		const numericMatch = normalized.match(/\d+/);
+		if (!numericMatch) return normalized;
+		const prefix = prefixMatch ? prefixMatch[0] : '';
+		return `${prefix}${numericMatch[0]}`;
+	};
+
 	function extractAttributes(input: string): Record<string, string> {
 		const regex = /([\w-]+)="([^"]*)"/g;
 		let match;
@@ -70,22 +115,26 @@ let pageLinks: { label: string; url: string | null }[] = [];
 		const trimmed = raw.trim();
 		if (!trimmed) return [];
 
+		const normalized = stripDocPrefix(trimmed);
 		const variants = new Set<string>();
 		variants.add(trimmed);
+		if (normalized !== trimmed) {
+			variants.add(normalized);
+		}
 
 		// Remove surrounding parentheses if present
-		if (trimmed.startsWith('(') && trimmed.endsWith(')') && trimmed.length > 2) {
-			variants.add(trimmed.slice(1, -1));
+		if (normalized.startsWith('(') && normalized.endsWith(')') && normalized.length > 2) {
+			variants.add(normalized.slice(1, -1));
 		}
 
 		// If prefixed with letters like p25 or page25
-		const alphaNumeric = trimmed.replace(/^[^0-9]+/, '');
+		const alphaNumeric = normalized.replace(/^[^0-9]+/, '');
 		if (alphaNumeric && alphaNumeric !== trimmed) {
 			variants.add(alphaNumeric);
 		}
 
 		// Extract all numeric groups
-		const numericMatches = trimmed.match(/\d+/g);
+		const numericMatches = normalized.match(/\d+/g);
 		numericMatches?.forEach((match) => {
 			variants.add(match);
 			variants.add(String(Number(match)));
@@ -119,17 +168,23 @@ let pageLinks: { label: string; url: string | null }[] = [];
 		return idx;
 	})();
 	const resolvePageTarget = (hint: string | null | undefined, entry: CitationLinkTarget | undefined) => {
-		if (!hint || !entry?.pageTargets) return null;
+		if (!entry) return null;
 
-		const candidates = derivePageHints(hint);
-		for (const candidate of candidates) {
-			const target = entry.pageTargets[candidate];
-			if (target) {
-				return target;
+		if (hint) {
+			const candidates = derivePageHints(hint);
+			for (const candidate of candidates) {
+				const target = entry.pageTargets?.[candidate];
+				if (target) {
+					return target;
+				}
 			}
 		}
 
-		return null;
+		if (entry.defaultTarget && canApplyAnchor(entry.defaultTarget)) {
+			return entry.defaultTarget;
+		}
+
+		return fallbackAnchorUrl(hint, entry) ?? entry.defaultTarget ?? null;
 	};
 
 	$: targetUrl = (() => {
@@ -144,9 +199,9 @@ let pageLinks: { label: string; url: string | null }[] = [];
 		const entry = sourceTargets?.[citationIndex - 1];
 		if (!entry) return [];
 
-		return displayHints.map((label) => ({
-			label,
-			url: resolvePageTarget(label, entry) ?? entry.defaultTarget ?? null
+		return displayHints.map((rawLabel) => ({
+			label: formatDisplayHint(rawLabel) || rawLabel,
+			url: resolvePageTarget(rawLabel, entry)
 		}));
 	})();
 	$: displayLabel = (() => {

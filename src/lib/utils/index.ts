@@ -32,6 +32,70 @@ function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+interface SourceGroupEntry {
+	index: number;
+	pages: string[];
+}
+
+const parseCitationGroup = (raw: string, initialIndex: number | null, maxIndex: number): SourceGroupEntry[] => {
+	if (!raw || typeof raw !== 'string') return [];
+
+	const segments = raw
+		.split(',')
+		.map((segment) => segment.trim())
+		.filter((segment) => segment.length > 0);
+
+	const groups = new Map<number, string[]>();
+	let currentIndex: number | null =
+		initialIndex && Number.isInteger(initialIndex) && initialIndex > 0 ? initialIndex : null;
+
+	const ensureGroup = (index: number) => {
+		if (index <= 0 || index > maxIndex) return false;
+		if (!groups.has(index)) {
+			groups.set(index, []);
+		}
+		return true;
+	};
+
+	segments.forEach((segment) => {
+		const colonMatch = segment.match(/^(\d+)\s*:\s*(.+)$/);
+		if (colonMatch) {
+			const parsedIndex = Number(colonMatch[1]);
+			if (!Number.isNaN(parsedIndex) && parsedIndex > 0 && parsedIndex <= maxIndex) {
+				currentIndex = parsedIndex;
+				const pageLabel = colonMatch[2].trim();
+				if (pageLabel.length > 0 && ensureGroup(parsedIndex)) {
+					groups.get(parsedIndex)?.push(pageLabel);
+				}
+			}
+			return;
+		}
+
+		const indexOnlyMatch = segment.match(/^(\d+)$/);
+		if (indexOnlyMatch) {
+			const parsedIndex = Number(indexOnlyMatch[1]);
+			if (!Number.isNaN(parsedIndex) && parsedIndex > 0 && parsedIndex <= maxIndex) {
+				currentIndex = parsedIndex;
+				ensureGroup(parsedIndex);
+			}
+			return;
+		}
+
+		if (currentIndex !== null && currentIndex > 0 && currentIndex <= maxIndex) {
+			if (ensureGroup(currentIndex)) {
+				groups.get(currentIndex)?.push(segment);
+			}
+		}
+	});
+
+	return Array.from(groups.entries())
+		.map(([index, pages]) => ({
+			index,
+			pages: pages.filter((label) => label.length > 0)
+		}))
+		.filter((entry) => entry.pages.length > 0);
+};
+
 export const replaceTokens = (content, sourceIds, char, user) => {
 	const tokens = [
 		{ regex: /{{char}}/gi, replacement: char },
@@ -85,6 +149,31 @@ export const replaceTokens = (content, sourceIds, char, user) => {
 		};
 
 		if (Array.isArray(sourceIds) && sourceIds.length > 0) {
+			// Match grouped dagger citations like †(1:p25, 2:p30) or †1(p4-5)
+			const daggerGroupRegex = /(?:†|‡|\u2020|\u2021)\s*(\d+)?\s*\(([^)]+)\)/g;
+			segment = segment.replace(daggerGroupRegex, (match, leadingIdx, group) => {
+			const initialIndex = leadingIdx ? Number(leadingIdx) : null;
+		const parsedGroups = parseCitationGroup(group, initialIndex, Array.isArray(sourceIds) ? sourceIds.length : 0);
+				if (parsedGroups.length === 0) {
+					return match;
+				}
+
+				const invalidEntry = parsedGroups.some(
+					(entry) =>
+						!Number.isInteger(entry.index) ||
+						entry.index <= 0 ||
+						entry.index > sourceIds.length ||
+						entry.pages.length === 0
+				);
+
+				if (invalidEntry) {
+					return match;
+				}
+
+				const payload = encodeURIComponent(JSON.stringify(parsedGroups));
+				return `<source_group data="${payload}" />`;
+			});
+
 			// Match both [1], [2], and [1,2,3] forms
 			const multiRefRegex = /\[([\d,\s]+)\]/g;
 			segment = segment.replace(multiRefRegex, (match, group) => {

@@ -2,8 +2,9 @@
 	import DOMPurify from 'dompurify';
 	import type { Token } from 'marked';
 
-	import { WEBUI_BASE_URL } from '$lib/constants';
+import { WEBUI_BASE_URL } from '$lib/constants';
 import Source from './Source.svelte';
+import SourceGroup from './SourceGroup.svelte';
 import { settings } from '$lib/stores';
 import type { CitationLinkTarget } from '../types';
 
@@ -121,7 +122,9 @@ export let sourceTargets: CitationLinkTarget[] = [];
 				onload="this.style.height=(this.contentWindow.document.body.scrollHeight+20)+'px';"
 			></iframe>
 		{/if}
-	{:else if token.text.includes(`<source_id`)}
+{:else if token.text.includes(`<source_group`)}
+	<SourceGroup {id} {token} {sourceTargets} onClick={onSourceClick} />
+{:else if token.text.includes(`<source_id`)}
 		<Source {id} {token} {sourceTargets} onClick={onSourceClick} />
 	{:else}
 		{@const br = token.text.match(/<br\s*\/?>/)}
