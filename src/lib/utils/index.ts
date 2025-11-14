@@ -81,6 +81,11 @@ const parseCitationGroup = (raw: string, initialIndex: number | null, maxIndex: 
 			return;
 		}
 
+		// Skip line number references like "line 4" or "lines 14-16"
+		if (/^lines?\s+\d+/.test(segment)) {
+			return;
+		}
+
 		if (currentIndex !== null && currentIndex > 0 && currentIndex <= maxIndex) {
 			if (ensureGroup(currentIndex)) {
 				groups.get(currentIndex)?.push(segment);

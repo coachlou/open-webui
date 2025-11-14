@@ -27,4 +27,16 @@ describe('replaceTokens grouped citations', () => {
 		const result = replaceTokens('†(4:p10)', ['Doc 1', 'Doc 2', 'Doc 3'], 'char', 'user');
 		expect(result).not.toContain('<source_group');
 	});
+
+	it('filters out line numbers from citations', () => {
+		const result = replaceTokens('†(1:p27, line 4)', ['Doc 1'], 'char', 'user');
+		const payload = extractGroupPayload(result);
+		expect(payload).toEqual([{ index: 1, pages: ['p27'] }]);
+	});
+
+	it('filters out multiple line numbers', () => {
+		const result = replaceTokens('†(1:p25, lines 14)', ['Doc 1'], 'char', 'user');
+		const payload = extractGroupPayload(result);
+		expect(payload).toEqual([{ index: 1, pages: ['p25'] }]);
+	});
 });
