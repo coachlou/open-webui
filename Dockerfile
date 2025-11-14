@@ -35,7 +35,9 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 COPY package.json package-lock.json ./
-RUN npm ci --force
+RUN npm --version && node --version && \
+    npm cache clean --force && \
+    npm ci --force
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH} \
