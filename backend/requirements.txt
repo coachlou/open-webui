@@ -63,7 +63,7 @@ fpdf2==2.8.2
 pymdown-extensions==10.14.2
 docx2txt==0.8
 python-pptx==1.0.2
-unstructured==0.16.17
+unstructured==0.18.18
 nltk==3.9.1
 Markdown==3.9
 pypandoc==1.15
@@ -79,7 +79,7 @@ azure-ai-documentintelligence==1.0.2
 
 pillow==11.3.0
 opencv-python-headless==4.11.0.86
-rapidocr-onnxruntime==1.4.4
+rapidocr-onnxruntime==1.2.3
 rank-bm25==0.2.2
 
 onnxruntime==1.20.1
