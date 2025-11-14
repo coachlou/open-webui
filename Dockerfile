@@ -37,7 +37,7 @@ RUN apk add --no-cache git
 COPY package.json package-lock.json ./
 RUN npm --version && node --version && \
     npm cache clean --force && \
-    npm ci --force
+    npm ci --force --loglevel verbose 2>&1 || (cat /root/.npm/_logs/*.log 2>/dev/null && exit 1)
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH} \
